@@ -16,7 +16,7 @@ type RouterResult struct {
 	Destination string
 }
 
-var ErrNoRoute = errors.New("no matching route found")
+var ErrNoRoute = errors.New("no matching route")
 var ErrInvalidConfig = errors.New("invalid config")
 
 func RouterRequestFromRequest(req *commonHttp.Request) *RouterRequest {
@@ -135,15 +135,23 @@ func (path *PathSpecification) matches(req *RouterRequest) (bool, *string, error
 
 	if path.Prefix != nil {
 		prefixLen := len(*path.Prefix)
+		if len(req.Path) < prefixLen {
+			return false, nil, nil
+		}
 		matches := req.Path[:prefixLen] == *path.Prefix
 
 		if matches {
 			if path.Rewrite != nil && *path.Rewrite {
 				newPathData := req.Path[prefixLen:]
 				// Add leading "/" if missing it in rewritten path
-				if newPathData[0] != '/' {
-					newPathData = "/" + newPathData
+				if len(newPathData) >= 1 {
+					if newPathData[0] != '/' {
+						newPathData = "/" + newPathData
+					}
+				} else {
+					newPathData = "/"
 				}
+
 				return matches, &newPathData, nil
 			} else {
 				return matches, &req.Path, nil

@@ -3,10 +3,16 @@ package routing
 import (
 	"context"
 	commonHttp "github.com/kulycloud/common/http"
+	"log"
 	"net/http"
 )
 
-func HandleRequest(_ context.Context, req *commonHttp.Request) *commonHttp.Response {
+func HandleRequest(ctx context.Context, req *commonHttp.Request) *commonHttp.Response {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Printf("recovered panic: %e", err)
+		}
+	}()
 	conf, err := ConfigFromRequest(req)
 	if err != nil {
 		return buildErrorResponse(err)
@@ -20,12 +26,17 @@ func HandleRequest(_ context.Context, req *commonHttp.Request) *commonHttp.Respo
 		return buildErrorResponse(err)
 	}
 
-	return forwardRoute(req, routerResult)
+	return forwardRoute(ctx, req, routerResult)
 }
 
 func buildErrorResponse(err error) *commonHttp.Response {
 	resp := commonHttp.NewResponse()
-	resp.Status = http.StatusInternalServerError
+	if err == ErrNoRoute {
+		resp.Status = http.StatusNotFound
+	} else {
+		resp.Status = http.StatusInternalServerError
+	}
+
 	resp.Body.Write([]byte(err.Error()))
 	resp.Headers.Set("Content-Type", "text/plain")
 

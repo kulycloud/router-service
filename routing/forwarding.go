@@ -1,20 +1,23 @@
 package routing
 
 import (
+	"context"
 	"fmt"
 	commonHttp "github.com/kulycloud/common/http"
 )
 
-func forwardRoute(req *commonHttp.Request, routerResult *RouterResult) *commonHttp.Response {
+func forwardRoute(ctx context.Context, req *commonHttp.Request, routerResult *RouterResult) *commonHttp.Response {
 	ref, ok := req.KulyData.Step.References[routerResult.Destination]
 	if !ok || ref == nil {
 		return buildErrorResponse(fmt.Errorf("%w: reference %s not found", ErrInvalidConfig, routerResult.Destination))
 	}
 
-	// TODO Forward
-	//comm := commonHttp.NewCommunicator(context.Background(), ref.Endpoints)
-	//comm.Ping()
+	req.KulyData.StepUid = ref.Step
+	res, err := commonHttp.ProcessRequest(ctx, ref.Endpoints, req)
+	if err != nil {
+		return buildErrorResponse(fmt.Errorf("error during forwarding: %w", err))
+	}
 
-	return nil
+	return res
 }
 
