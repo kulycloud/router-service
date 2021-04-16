@@ -1,2 +1,2 @@
 image: ghcr.io/kulycloud/service-router:latest-dev
-replicas: 3
+replicas: 5

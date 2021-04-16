@@ -12,6 +12,10 @@ func forwardRoute(ctx context.Context, req *commonHttp.Request, routerResult *Ro
 		return buildErrorResponse(fmt.Errorf("%w: reference %s not found", ErrInvalidConfig, routerResult.Destination))
 	}
 
+	if routerResult.RewrittenPath != nil {
+		req.Path = *routerResult.RewrittenPath
+	}
+
 	req.KulyData.StepUid = ref.Step
 	res, err := commonHttp.ProcessRequest(ctx, ref.Endpoints, req)
 	if err != nil {
